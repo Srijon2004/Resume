@@ -6,7 +6,7 @@ import Checker from "./pages/Checker";
 import Preview from "./pages/Preview";
 import Download from "./pages/Download";
 import Register from "./pages/Register";
-
+import Editor from "./pages/Editor";
 export default function App() {
   return (
     <BrowserRouter>
@@ -14,7 +14,9 @@ export default function App() {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/editor" element={<Editor />} />
         <Route path="/builder" element={<Builder />} />
+        <Route path="/create" element={<Builder />} />
         <Route path="/checker" element={<Checker />} />
         <Route path="/preview" element={<Preview />} />
         <Route path="/download" element={<Download />} />
