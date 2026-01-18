@@ -1520,34 +1520,202 @@ export default function Checker() {
 
 
 
+  // const handleCheck = async () => {
+  //   if (!resumeText || !jobRole || !jobDescription) {
+  //     return alert("Ensure Role, JD, and Resume are provided!");
+  //   }
+  //   setLoading(true);
+  //   try {
+  //     const res = await api.post("/resume/check", 
+  //       { resumeText, jobRole, jobDescription },
+  //       { headers: { Authorization: localStorage.getItem("token") } }
+  //     );
+
+  //     // ✅ NEW CLEANER LOGIC: Extracts JSON even if wrapped in markdown
+  //     let data = res.data;
+  //     if (typeof data === 'string') {
+  //       const jsonMatch = data.match(/\{[\s\S]*\}/); // Finds content between first { and last }
+  //       if (jsonMatch) {
+  //         data = JSON.parse(jsonMatch[0]);
+  //       }
+  //     }
+      
+  //     setResult(data);
+  //   } catch (err) {
+  //     console.error("Analysis Error:", err);
+  //     alert("AI Analysis failed. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+
+  // const handleCheck = async () => {
+  //   if (!resumeText || !jobRole || !jobDescription) {
+  //     return alert("Ensure Role, JD, and Resume are provided!");
+  //   }
+  //   setLoading(true);
+  //   try {
+  //     const res = await api.post("/resume/check", 
+  //       { resumeText, jobRole, jobDescription },
+  //       { headers: { Authorization: localStorage.getItem("token") } }
+  //     );
+
+  //     let data = res.data;
+
+  //     // If the backend sends a string (because JSON.parse failed there), 
+  //     // we clean it here. If it's already an object, we use it directly.
+  //     if (typeof data === 'string') {
+  //       const jsonMatch = data.match(/\{[\s\S]*\}/);
+  //       if (jsonMatch) {
+  //         data = JSON.parse(jsonMatch[0]);
+  //       }
+  //     }
+      
+  //     setResult(data);
+  //   } catch (err) {
+  //     console.error("Analysis Error:", err);
+  //     alert("AI Analysis failed. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+  // const handleCheck = async () => {
+  //   if (!resumeText || !jobRole || !jobDescription) {
+  //     return alert("Ensure Role, JD, and Resume are provided!");
+  //   }
+
+  //   setLoading(true);
+  //   try {
+  //     const res = await api.post(
+  //       "/resume/check",
+  //       { resumeText, jobRole, jobDescription },
+  //       { headers: { Authorization: localStorage.getItem("token") } }
+  //     );
+
+  //     let data = res.data;
+
+  //     // ---- CLEAN & EXTRACT JSON IF AI SENT TEXT + MARKDOWN ----
+  //     if (typeof data === "string") {
+  //       const jsonMatch = data.match(/\{[\s\S]*\}/);
+  //       if (jsonMatch) {
+  //         data = JSON.parse(jsonMatch[0]);
+  //       }
+  //     }
+
+  //     // ---- NORMALIZE SHAPE SO UI NEVER BREAKS ----
+  //     data = {
+  //       atsScore: data.atsScore ?? 0,
+  //       strengths: Array.isArray(data.strengths) ? data.strengths : [],
+  //       suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+  //       missingKeywords: Array.isArray(data.missingKeywords)
+  //         ? data.missingKeywords
+  //         : [],
+  //       weaknesses: Array.isArray(data.weaknesses)
+  //         ? data.weaknesses
+  //         : [],
+  //     };
+
+  //     console.log("FINAL CLEANED RESULT:", data); // <-- Keep this for debugging
+  //     setResult(data);
+  //   } catch (err) {
+  //     console.error("Analysis Error:", err);
+  //     alert("Invalid AI response format.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleCheck = async () => {
     if (!resumeText || !jobRole || !jobDescription) {
       return alert("Ensure Role, JD, and Resume are provided!");
     }
+
     setLoading(true);
     try {
-      const res = await api.post("/resume/check", 
+      const res = await api.post(
+        "/resume/check",
         { resumeText, jobRole, jobDescription },
         { headers: { Authorization: localStorage.getItem("token") } }
       );
 
-      // ✅ NEW CLEANER LOGIC: Extracts JSON even if wrapped in markdown
       let data = res.data;
-      if (typeof data === 'string') {
-        const jsonMatch = data.match(/\{[\s\S]*\}/); // Finds content between first { and last }
-        if (jsonMatch) {
-          data = JSON.parse(jsonMatch[0]);
+
+      // 🔥 STRONG CLEANING LOGIC (fixes your exact screenshot issue)
+      if (typeof data === "string") {
+        // 1) Remove everything before the first {
+        const start = data.indexOf("{");
+        const end = data.lastIndexOf("}");
+
+        if (start !== -1 && end !== -1) {
+          const jsonText = data.substring(start, end + 1);
+          data = JSON.parse(jsonText);
         }
       }
-      
+
+      // 🔥 Normalize shape so UI never breaks
+      // data = {
+      //   atsScore: data.atsScore ?? 0,
+      //   strengths: Array.isArray(data.strengths) ? data.strengths : [],
+      //   suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+      //   missingKeywords: Array.isArray(data.missingKeywords)
+      //     ? data.missingKeywords
+      //     : [],
+      //   weaknesses: Array.isArray(data.weaknesses)
+      //     ? data.weaknesses
+      //     : [],
+      // };
+
+
+      data = {
+          atsScore: data.atsScore ?? 0,
+
+          strengths:
+            typeof data.strengths === "string"
+              ? data.strengths
+                  .split(/\n|•|-|1\.|2\.|3\.|4\./) // break into lines
+                  .map(s => s.trim())
+                  .filter(s => s.length > 2)
+              : Array.isArray(data.strengths)
+              ? data.strengths
+              : [],
+
+          suggestions:
+            typeof data.suggestions === "string"
+              ? data.suggestions
+                  .split(/\n|•|-|1\.|2\.|3\.|4\./) // VERY IMPORTANT LINE
+                  .map(s => s.trim())
+                  .filter(s => s.length > 2)
+              : Array.isArray(data.suggestions)
+              ? data.suggestions
+              : [],
+
+          missingKeywords: Array.isArray(data.missingKeywords)
+            ? data.missingKeywords
+            : [],
+
+          weaknesses:
+            typeof data.weaknesses === "string"
+              ? [data.weaknesses]
+              : Array.isArray(data.weaknesses)
+              ? data.weaknesses
+              : [],
+        };
+
+
+      console.log("FINAL CLEANED RESULT:", data);
       setResult(data);
     } catch (err) {
       console.error("Analysis Error:", err);
-      alert("AI Analysis failed. Please try again.");
+      alert("Invalid AI response format.");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
@@ -1645,14 +1813,14 @@ export default function Checker() {
             )}
           </div> */}
           {/* RIGHT PANEL: RESULTS */}
-          <div className="lg:col-span-5 sticky top-28">
+          {/* <div className="lg:col-span-5 sticky top-28">
             {result ? (
               <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
                 <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
                   <Sparkles className="text-blue-600" size={24} /> AI Analysis
                 </h2>
 
-                {/* ATS SCORE BADGE */}
+                {/* ATS SCORE BADGE 
                 <div className="bg-slate-900 rounded-[2rem] p-8 mb-8 text-center shadow-2xl relative overflow-hidden">
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">ATS Score Match</p>
                   <p className={`text-7xl font-black ${result.atsScore > 70 ? 'text-green-400' : 'text-blue-400'}`}>
@@ -1661,6 +1829,14 @@ export default function Checker() {
                 </div>
 
                 <div className="space-y-4">
+                  <ResultSection 
+                    icon={<AlertCircle size={16}/>} 
+                    title="Weaknesses" 
+                    items={result.weaknesses} 
+                    bgColor="bg-red-50/50" 
+                    textColor="text-red-800" 
+                    badgeColor="bg-red-500"
+                  />
                   <ResultSection 
                     icon={<CheckCircle2 size={16}/>} 
                     title="Top Strengths" 
@@ -1679,7 +1855,7 @@ export default function Checker() {
                     badgeColor="bg-blue-600"
                   />
 
-                  {/* MISSING KEYWORDS TAGS */}
+                  {/* MISSING KEYWORDS TAGS 
                   {result.missingKeywords?.length > 0 && (
                     <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
                       <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -1698,15 +1874,185 @@ export default function Checker() {
               </div>
             ) : (
               <div className="bg-white h-[680px] p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                {/* Your existing empty state code */}
+                {/* Your existing empty state code 
               </div>
             )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+          </div> */}
+
+
+          {/* RIGHT PANEL: RESULTS */}
+          {/* <div className="lg:col-span-5 sticky top-28">
+            {result ? (
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+                <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                  <Sparkles className="text-blue-600" size={24} /> AI Analysis
+                </h2>
+
+                {/* ATS SCORE CARD 
+                <div className="bg-slate-900 rounded-[2rem] p-8 mb-8 text-center shadow-2xl">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                    ATS Score Match
+                  </p>
+                  <p
+                    className={`text-7xl font-black ${
+                      result.atsScore > 70 ? "text-green-400" : "text-blue-400"
+                    }`}
+                  >
+                    {result.atsScore}%
+                  </p>
+                </div>
+
+                <div className="space-y-5">
+                  {/* WEAKNESSES 
+                  <ResultSection
+                    icon={<AlertCircle size={16} />}
+                    title="Weaknesses"
+                    items={result.weaknesses}
+                    bgColor="bg-red-50/50"
+                    textColor="text-red-800"
+                    badgeColor="bg-red-500"
+                  />
+
+                  {/* STRENGTHS 
+                  <ResultSection
+                    icon={<CheckCircle2 size={16} />}
+                    title="Top Strengths"
+                    items={result.strengths}
+                    bgColor="bg-green-50/50"
+                    textColor="text-green-800"
+                    badgeColor="bg-green-500"
+                  />
+
+                  {/* SUGGESTIONS 
+                  <ResultSection
+                    icon={<AlertCircle size={16} />}
+                    title="Key Suggestions"
+                    items={result.suggestions}
+                    bgColor="bg-blue-50/50"
+                    textColor="text-blue-800"
+                    badgeColor="bg-blue-600"
+                  />
+
+                  {/* MISSING KEYWORDS TAGS 
+                  {result.missingKeywords?.length > 0 && (
+                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Briefcase size={14} /> Missing Keywords
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {result.missingKeywords.map((k, i) => (
+                          <span
+                            key={i}
+                            className="bg-white text-slate-600 px-3 py-1.5 text-[11px] font-bold rounded-xl border border-slate-200 shadow-sm"
+                          >
+                            {k}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white h-[680px] p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                <BarChart3 size={60} className="text-slate-200 mb-6" />
+                <h3 className="text-2xl font-black text-slate-800 tracking-tight">
+                  Ready for Optimization
+                </h3>
+                <p className="text-slate-400 max-w-[280px] mx-auto text-sm mt-3 leading-relaxed">
+                  Upload your resume and the job listing to see how you rank against recruiters'
+                  expectations.
+                </p>
+              </div>
+            )}
+          </div> */}
+
+
+          {/* RIGHT PANEL: RESULTS */}
+                  <div className="lg:col-span-5 sticky top-28">
+                    {result ? (
+                      <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+                        <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                          <Sparkles className="text-blue-600" size={24} />
+                          AI Analysis Result
+                        </h2>
+
+                        {/* ATS SCORE */}
+                        <div className="bg-slate-900 rounded-[2rem] p-6 mb-6 text-center">
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                            ATS Score Match
+                          </p>
+                          <p className="text-6xl font-black text-blue-400">
+                            {result.atsScore}%
+                          </p>
+                        </div>
+
+                        {/* WEAKNESSES */}
+                        <ResultSection
+                          icon={<AlertCircle size={16} />}
+                          title="Weaknesses"
+                          items={result.weaknesses}
+                          bgColor="bg-red-50/50"
+                          textColor="text-red-800"
+                          badgeColor="bg-red-500"
+                        />
+
+                        {/* STRENGTHS */}
+                        <ResultSection
+                          icon={<CheckCircle2 size={16} />}
+                          title="Top Strengths"
+                          items={result.strengths}
+                          bgColor="bg-green-50/50"
+                          textColor="text-green-800"
+                          badgeColor="bg-green-500"
+                        />
+
+                        {/* SUGGESTIONS */}
+                        <ResultSection
+                          icon={<AlertCircle size={16} />}
+                          title="Key Suggestions"
+                          items={result.suggestions}
+                          bgColor="bg-blue-50/50"
+                          textColor="text-blue-800"
+                          badgeColor="bg-blue-600"
+                        />
+
+                        {/* MISSING KEYWORDS */}
+                        {result.missingKeywords.length > 0 && (
+                          <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 mt-6">
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                              <Briefcase size={14} /> Missing Keywords
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                              {result.missingKeywords.map((k, i) => (
+                                <span
+                                  key={i}
+                                  className="bg-white px-3 py-1.5 text-xs font-bold rounded-xl border"
+                                >
+                                  {k}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-white h-[680px] p-10 rounded-[2.5rem] shadow-xl border flex items-center justify-center text-center">
+                        <p className="text-slate-400 font-bold">
+                          Upload resume & job description to see result
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+        
+
+
+                </div>
+              </div>
+            </div>
+          );
+        }
 
 // ✅ REFINED SUGGESTION COMPONENT
 // function ResultSection({ icon, title, items, bgColor, textColor, badgeColor }) {
@@ -1743,45 +2089,90 @@ export default function Checker() {
 
 
 
-function ResultSection({ icon, title, items, bgColor, textColor, badgeColor }) {
-  if (!items || items.length === 0) return null;
+// function ResultSection({ icon, title, items, bgColor, textColor, badgeColor }) {
+//   if (!items || items.length === 0) return null;
   
-  // Ensure we are working with an array
-  const listItems = Array.isArray(items) ? items : [items];
+//   // Ensure we are working with an array
+//   const listItems = Array.isArray(items) ? items : [items];
+
+//   return (
+//     <div className={`p-6 ${bgColor} rounded-[2rem] border border-white/50 shadow-sm mb-6 animate-in slide-in-from-right-4`}>
+//       <h3 className={`font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 mb-5 ${textColor}`}>
+//         {icon} {title}
+//       </h3>
+
+//       <div className="space-y-4">
+//         {listItems.map((item, i) => {
+//           // Split "Title: Description" if the AI uses that format
+//           const parts = item.split(":");
+//           const heading = parts.length > 1 ? parts[0] : null;
+//           const description = parts.length > 1 ? parts.slice(1).join(":") : item;
+
+//           return (
+//             <div
+//               key={i}
+//               className="flex items-start gap-4 bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-white/80 hover:shadow-md transition-all group"
+//             >
+//               {/* Step Number Badge */}
+//               <span className={`flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full ${badgeColor} text-white text-[10px] font-black shadow-sm group-hover:scale-110 transition-transform`}>
+//                 {i + 1}
+//               </span>
+
+//               <div>
+//                 {heading && (
+//                   <p className="text-sm font-black text-slate-800 mb-1 leading-tight">
+//                     {heading.trim()}
+//                   </p>
+//                 )}
+//                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
+//                   {description.trim()}
+//                 </p>
+//               </div>
+//             </div>
+//           );
+//         })}
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+function ResultSection({ icon, title, items, bgColor, textColor, badgeColor }) {
+  // Convert everything into an array of clean sentences
+  let listItems = [];
+
+  if (typeof items === "string") {
+    // Remove JSON, backticks, and split into sentences
+    listItems = items
+      .replace(/```[\s\S]*```/g, "") // remove markdown code blocks
+      .replace(/\{[\s\S]*\}/g, "") // remove raw JSON
+      .split(".")
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  } 
+  else if (Array.isArray(items)) {
+    listItems = items;
+  }
+
+  if (listItems.length === 0) return null;
 
   return (
-    <div className={`p-6 ${bgColor} rounded-[2rem] border border-white/50 shadow-sm mb-6 animate-in slide-in-from-right-4`}>
-      <h3 className={`font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 mb-5 ${textColor}`}>
+    <div className={`p-6 ${bgColor} rounded-[2rem] border shadow-sm mb-4`}>
+      <h3 className={`font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 mb-4 ${textColor}`}>
         {icon} {title}
       </h3>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {listItems.map((item, i) => {
-          // Split "Title: Description" if the AI uses that format
-          const parts = item.split(":");
-          const heading = parts.length > 1 ? parts[0] : null;
-          const description = parts.length > 1 ? parts.slice(1).join(":") : item;
-
           return (
-            <div
-              key={i}
-              className="flex items-start gap-4 bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-white/80 hover:shadow-md transition-all group"
-            >
-              {/* Step Number Badge */}
-              <span className={`flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full ${badgeColor} text-white text-[10px] font-black shadow-sm group-hover:scale-110 transition-transform`}>
+            <div key={i} className="flex items-start gap-3 bg-white p-3 rounded-xl border">
+              <span className={`flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full ${badgeColor} text-white text-[10px] font-bold`}>
                 {i + 1}
               </span>
-
-              <div>
-                {heading && (
-                  <p className="text-sm font-black text-slate-800 mb-1 leading-tight">
-                    {heading.trim()}
-                  </p>
-                )}
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  {description.trim()}
-                </p>
-              </div>
+              <p className="text-sm text-slate-700 font-medium">
+                {item}
+              </p>
             </div>
           );
         })}

@@ -98,19 +98,65 @@ router.get("/my", isAuth, async (req, res) => {
 // });
 
 
+// router.post("/check", isAuth, async (req, res) => {
+//   try {
+//     const { resumeText, jobRole, jobDescription } = req.body;
+//     if (!resumeText || !jobRole) {
+//       return res.status(400).json({ message: "Missing required fields" });
+//     }
+//     const ai = await analyzeResume(resumeText, jobRole, jobDescription);
+//     res.json(ai);
+//   } catch (err) {
+//     console.error("AI Error:", err);
+//     res.status(500).json({ message: "AI analysis failed" });
+//   }
+// });
+
+
+
+
+
+
+
+
+
 router.post("/check", isAuth, async (req, res) => {
   try {
     const { resumeText, jobRole, jobDescription } = req.body;
+
     if (!resumeText || !jobRole) {
       return res.status(400).json({ message: "Missing required fields" });
     }
-    const ai = await analyzeResume(resumeText, jobRole, jobDescription);
-    res.json(ai);
+
+    let ai = await analyzeResume(resumeText, jobRole, jobDescription);
+
+    // 🔥 ENSURE WE ALWAYS SEND CLEAN JSON
+    if (typeof ai === "string") {
+      const start = ai.indexOf("{");
+      const end = ai.lastIndexOf("}");
+      if (start !== -1 && end !== -1) {
+        ai = JSON.parse(ai.substring(start, end + 1));
+      }
+    }
+
+    // 🔥 FINAL NORMALIZED RESPONSE (VERY IMPORTANT)
+    const finalResponse = {
+      atsScore: ai.atsScore ?? 0,
+      strengths: Array.isArray(ai.strengths) ? ai.strengths : [],
+      weaknesses: Array.isArray(ai.weaknesses) ? ai.weaknesses : [],
+      suggestions: Array.isArray(ai.suggestions) ? ai.suggestions : [],
+      missingKeywords: Array.isArray(ai.missingKeywords)
+        ? ai.missingKeywords
+        : [],
+    };
+
+    res.json(finalResponse);
   } catch (err) {
     console.error("AI Error:", err);
     res.status(500).json({ message: "AI analysis failed" });
   }
 });
+
 
 
 // router.get("/:id", isAuth, async (req, res) => {
