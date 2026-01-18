@@ -7,9 +7,10 @@
 //     </div>
 //   );
 // }
-
+// okkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
 import ResumeForm from "../components/ResumeForm";
 import { Sparkles } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function Builder() {
   return (
@@ -35,6 +36,80 @@ export default function Builder() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import ResumeForm from "../components/ResumeForm";
+// import { Sparkles, ArrowLeft } from "lucide-react";
+// import ThemeToggle from "../components/ThemeToggle";
+// import { useNavigate } from "react-router-dom";
+
+// export default function Builder() {
+//   const navigate = useNavigate();
+
+//   return (
+//     <div className="bg-[#F8FAFC] dark:bg-slate-950 min-h-screen flex flex-col transition-colors duration-300">
+//       <div className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b dark:border-slate-800">
+//         <div className="max-w-7xl mx-auto px-4 md:px-12 py-4 flex justify-between items-center">
+//           <div className="flex items-center gap-6">
+//             <div className="flex items-center gap-2 pr-6 border-r border-slate-200 dark:border-slate-700">
+//               <div className="p-2 bg-blue-600 rounded-lg text-white shadow-lg shadow-blue-200">
+//                 <Sparkles size={20} />
+//               </div>
+//               <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tighter uppercase hidden sm:block">
+//                 AI Builder
+//               </h1>
+//             </div>
+//             <button
+//               onClick={() => navigate("/dashboard")} // Explicit navigation
+//               className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 font-bold transition-all group"
+//             >
+//               <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+//               <span>Back to Dashboard</span>
+//             </button>
+//           </div>
+//           <div className="flex items-center gap-4">
+//              <span className="hidden lg:block text-slate-400 dark:text-slate-500 text-xs font-medium italic">
+//                 Changes are saved to cloud
+//              </span>
+//              <ThemeToggle />
+//           </div>
+//         </div>
+//       </div>
+//       <div className="flex-1">
+//         <ResumeForm />
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // import ResumeForm from "../components/ResumeForm";
 // import { Sparkles, ArrowLeft, LayoutDashboard, PlusCircle } from "lucide-react";

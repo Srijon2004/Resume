@@ -1441,18 +1441,376 @@
 
 
 
+// import { useState } from "react";
+// import { api } from "../api/api";
+// import * as pdfjsLib from "pdfjs-dist";
+// import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
+// import { useNavigate } from "react-router-dom";
+
+// pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+// import {
+//   Sparkles, Loader2, Target, AlertCircle, CheckCircle2,
+//   BarChart3, UploadCloud, FileText, Briefcase,
+//   LayoutDashboard, PlusCircle, ArrowLeft, ChevronRight
+// } from "lucide-react";
+
+// export default function Checker() {
+//   const [resumeText, setResumeText] = useState("");
+//   const [jobRole, setJobRole] = useState("");
+//   const [jobDescription, setJobDescription] = useState("");
+//   const [result, setResult] = useState(null);
+//   const [loading, setLoading] = useState(false);
+//   const [isParsing, setIsParsing] = useState(false);
+//   const [uploadedFileName, setUploadedFileName] = useState("");
+//   const navigate = useNavigate();
+
+//   const handleFileUpload = async (e) => {
+//     const file = e.target.files[0];
+//     if (file && file.type === "application/pdf") {
+//       setIsParsing(true);
+//       setUploadedFileName(file.name);
+//       const reader = new FileReader();
+//       reader.onload = async (event) => {
+//         try {
+//           const typedarray = new Uint8Array(event.target.result);
+//           const pdf = await pdfjsLib.getDocument(typedarray).promise;
+//           let fullText = "";
+//           for (let i = 1; i <= pdf.numPages; i++) {
+//             const page = await pdf.getPage(i);
+//             const content = await page.getTextContent();
+//             fullText += content.items.map((item) => item.str).join(" ") + "\n";
+//           }
+//           setResumeText(fullText);
+//         } catch (error) {
+//           alert("Failed to extract text from PDF.");
+//         } finally {
+//           setIsParsing(false);
+//         }
+//       };
+//       reader.readAsArrayBuffer(file);
+//     }
+//   };
+
+
+//   const handleCheck = async () => {
+//     if (!resumeText || !jobRole || !jobDescription) {
+//       return alert("Ensure Role, JD, and Resume are provided!");
+//     }
+
+//     setLoading(true);
+//     try {
+//       const res = await api.post(
+//         "/resume/check",
+//         { resumeText, jobRole, jobDescription },
+//         { headers: { Authorization: localStorage.getItem("token") } }
+//       );
+
+//       let data = res.data;
+
+//       // 🔥 STRONG CLEANING LOGIC (fixes your exact screenshot issue)
+//       if (typeof data === "string") {
+//         // 1) Remove everything before the first {
+//         const start = data.indexOf("{");
+//         const end = data.lastIndexOf("}");
+
+//         if (start !== -1 && end !== -1) {
+//           const jsonText = data.substring(start, end + 1);
+//           data = JSON.parse(jsonText);
+//         }
+//       }
+
+//       // 🔥 Normalize shape so UI never breaks
+//       // data = {
+//       //   atsScore: data.atsScore ?? 0,
+//       //   strengths: Array.isArray(data.strengths) ? data.strengths : [],
+//       //   suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+//       //   missingKeywords: Array.isArray(data.missingKeywords)
+//       //     ? data.missingKeywords
+//       //     : [],
+//       //   weaknesses: Array.isArray(data.weaknesses)
+//       //     ? data.weaknesses
+//       //     : [],
+//       // };
+
+
+//       data = {
+//           atsScore: data.atsScore ?? 0,
+
+//           strengths:
+//             typeof data.strengths === "string"
+//               ? data.strengths
+//                   .split(/\n|•|-|1\.|2\.|3\.|4\./) // break into lines
+//                   .map(s => s.trim())
+//                   .filter(s => s.length > 2)
+//               : Array.isArray(data.strengths)
+//               ? data.strengths
+//               : [],
+
+//           suggestions:
+//             typeof data.suggestions === "string"
+//               ? data.suggestions
+//                   .split(/\n|•|-|1\.|2\.|3\.|4\./) // VERY IMPORTANT LINE
+//                   .map(s => s.trim())
+//                   .filter(s => s.length > 2)
+//               : Array.isArray(data.suggestions)
+//               ? data.suggestions
+//               : [],
+
+//           missingKeywords: Array.isArray(data.missingKeywords)
+//             ? data.missingKeywords
+//             : [],
+
+//           weaknesses:
+//             typeof data.weaknesses === "string"
+//               ? [data.weaknesses]
+//               : Array.isArray(data.weaknesses)
+//               ? data.weaknesses
+//               : [],
+//         };
+
+
+//       console.log("FINAL CLEANED RESULT:", data);
+//       setResult(data);
+//     } catch (err) {
+//       console.error("Analysis Error:", err);
+//       alert("Invalid AI response format.");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+
+//   return (
+//     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
+//       {/* HEADER NAV */}
+//       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b px-6 py-4 flex justify-between items-center shadow-sm">
+//         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold transition-all">
+//           <ArrowLeft size={20} /> Back
+//         </button>
+//         <div className="flex gap-3">
+//           <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2 rounded-xl font-bold hover:bg-slate-200 transition-all border border-slate-200">
+//             <LayoutDashboard size={18} /> Dashboard
+//           </button>
+//           <button onClick={() => navigate("/create")} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 active:scale-95 transition-all">
+//             <PlusCircle size={18} /> Create Resume
+//           </button>
+//         </div>
+//       </nav>
+
+//       <div className="max-w-7xl mx-auto mt-10 px-6">
+//         {/* ✅ FIXED TITLE: ICON AND TEXT IN ONE LINE */}
+//         <header className="text-center mb-12 flex flex-col items-center">
+//           <div className="flex items-center justify-center gap-4 mb-4">
+//             <div className="p-3 bg-blue-50 rounded-2xl">
+//               <Sparkles className="text-blue-600 animate-pulse" size={32} />
+//             </div>
+//             <h1 className="text-4xl font-black text-slate-900 tracking-tight">AI Resume Checker</h1>
+//           </div>
+//           <p className="text-slate-500 font-medium">Get real-time feedback and ATS optimization suggestions</p>
+//         </header>
+
+//         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+//           {/* LEFT PANEL: INPUTS */}
+//           <div className="lg:col-span-7 space-y-8">
+//             <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+//               <div className="space-y-6">
+//                 <div>
+//                   <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 block ml-1">Target Job Role</label>
+//                   <div className="relative group">
+//                     <Target className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500" size={18} />
+//                     <input type="text" placeholder="e.g. Full Stack Developer" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-400 focus:bg-white transition-all text-sm font-medium" onChange={(e) => setJobRole(e.target.value)} />
+//                   </div>
+//                 </div>
+
+//                 <div>
+//                   <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 block ml-1">Resume Upload (PDF)</label>
+//                   <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-slate-200 border-dashed rounded-[2rem] cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-all overflow-hidden relative">
+//                     <div className="flex flex-col items-center justify-center">
+//                       {isParsing ? <Loader2 className="animate-spin text-blue-500" size={40} /> : <UploadCloud className="w-10 h-10 text-slate-400 mb-2" />}
+//                       <p className="text-sm text-slate-600 font-bold">{isParsing ? "Extracting..." : "Click to upload PDF"}</p>
+//                     </div>
+//                     <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} />
+//                   </label>
+//                   {uploadedFileName && !isParsing && <p className="mt-3 text-xs font-bold text-green-600 flex items-center gap-2"><CheckCircle2 size={14}/> {uploadedFileName} ready!</p>}
+//                 </div>
+
+//                 <div>
+//                   <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 block ml-1">Job Description</label>
+//                   <textarea rows={6} className="w-full p-5 bg-slate-50 border-2 border-slate-50 rounded-[1.5rem] outline-none focus:border-blue-400 focus:bg-white transition-all text-sm leading-relaxed" placeholder="Paste JD here..." onChange={(e) => setJobDescription(e.target.value)} />
+//                 </div>
+
+//                 <button onClick={handleCheck} disabled={loading || isParsing} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center justify-center gap-3 active:scale-95 transition-all">
+//                   {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
+//                   {loading ? "Analyzing..." : "Analyze ATS Match"}
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+
+
+//           {/* RIGHT PANEL: RESULTS */}
+//                   <div className="lg:col-span-5 sticky top-28">
+//                     {result ? (
+//                       <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+//                         <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+//                           <Sparkles className="text-blue-600" size={24} />
+//                           AI Analysis Result
+//                         </h2>
+
+//                         {/* ATS SCORE */}
+//                         <div className="bg-slate-900 rounded-[2rem] p-6 mb-6 text-center">
+//                           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+//                             ATS Score Match
+//                           </p>
+//                           <p className="text-6xl font-black text-blue-400">
+//                             {result.atsScore}%
+//                           </p>
+//                         </div>
+
+//                         {/* WEAKNESSES */}
+//                         <ResultSection
+//                           icon={<AlertCircle size={16} />}
+//                           title="Weaknesses"
+//                           items={result.weaknesses}
+//                           bgColor="bg-red-50/50"
+//                           textColor="text-red-800"
+//                           badgeColor="bg-red-500"
+//                         />
+
+//                         {/* STRENGTHS */}
+//                         <ResultSection
+//                           icon={<CheckCircle2 size={16} />}
+//                           title="Top Strengths"
+//                           items={result.strengths}
+//                           bgColor="bg-green-50/50"
+//                           textColor="text-green-800"
+//                           badgeColor="bg-green-500"
+//                         />
+
+//                         {/* SUGGESTIONS */}
+//                         <ResultSection
+//                           icon={<AlertCircle size={16} />}
+//                           title="Key Suggestions"
+//                           items={result.suggestions}
+//                           bgColor="bg-blue-50/50"
+//                           textColor="text-blue-800"
+//                           badgeColor="bg-blue-600"
+//                         />
+
+//                         {/* MISSING KEYWORDS */}
+//                         {result.missingKeywords.length > 0 && (
+//                           <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 mt-6">
+//                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+//                               <Briefcase size={14} /> Missing Keywords
+//                             </h3>
+//                             <div className="flex flex-wrap gap-2">
+//                               {result.missingKeywords.map((k, i) => (
+//                                 <span
+//                                   key={i}
+//                                   className="bg-white px-3 py-1.5 text-xs font-bold rounded-xl border"
+//                                 >
+//                                   {k}
+//                                 </span>
+//                               ))}
+//                             </div>
+//                           </div>
+//                         )}
+//                       </div>
+//                     ) : (
+//                       <div className="bg-white h-[680px] p-10 rounded-[2.5rem] shadow-xl border flex items-center justify-center text-center">
+//                         <p className="text-slate-400 font-bold">
+//                           Upload resume & job description to see result
+//                         </p>
+//                       </div>
+//                     )}
+//                   </div>
+
+        
+
+
+//                 </div>
+//               </div>
+//             </div>
+//           );
+//         }
+
+
+// function ResultSection({ icon, title, items, bgColor, textColor, badgeColor }) {
+//   // Convert everything into an array of clean sentences
+//   let listItems = [];
+
+//   if (typeof items === "string") {
+//     // Remove JSON, backticks, and split into sentences
+//     listItems = items
+//       .replace(/```[\s\S]*```/g, "") // remove markdown code blocks
+//       .replace(/\{[\s\S]*\}/g, "") // remove raw JSON
+//       .split(".")
+//       .map(s => s.trim())
+//       .filter(s => s.length > 0);
+//   } 
+//   else if (Array.isArray(items)) {
+//     listItems = items;
+//   }
+
+//   if (listItems.length === 0) return null;
+
+//   return (
+//     <div className={`p-6 ${bgColor} rounded-[2rem] border shadow-sm mb-4`}>
+//       <h3 className={`font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 mb-4 ${textColor}`}>
+//         {icon} {title}
+//       </h3>
+
+//       <div className="space-y-3">
+//         {listItems.map((item, i) => {
+//           return (
+//             <div key={i} className="flex items-start gap-3 bg-white p-3 rounded-xl border">
+//               <span className={`flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full ${badgeColor} text-white text-[10px] font-bold`}>
+//                 {i + 1}
+//               </span>
+//               <p className="text-sm text-slate-700 font-medium">
+//                 {item}
+//               </p>
+//             </div>
+//           );
+//         })}
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { useState } from "react";
 import { api } from "../api/api";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle"; // ✅ Theme Toggle Integrated
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 import {
   Sparkles, Loader2, Target, AlertCircle, CheckCircle2,
-  BarChart3, UploadCloud, FileText, Briefcase,
-  LayoutDashboard, PlusCircle, ArrowLeft, ChevronRight
+  UploadCloud, Briefcase, LayoutDashboard, PlusCircle, ArrowLeft
 } from "lucide-react";
 
 export default function Checker() {
@@ -1492,143 +1850,6 @@ export default function Checker() {
     }
   };
 
-  // const handleCheck = async () => {
-  //   if (!resumeText || !jobRole || !jobDescription) {
-  //     return alert("Ensure Role, JD, and Resume are provided!");
-  //   }
-  //   setLoading(true);
-  //   try {
-  //     const res = await api.post("/resume/check", 
-  //       { resumeText, jobRole, jobDescription },
-  //       { headers: { Authorization: localStorage.getItem("token") } }
-  //     );
-      
-  //     // ✅ FIX: Clean AI response if it contains markdown code blocks
-  //     let data = res.data;
-  //     if (typeof data === 'string') {
-  //       const jsonMatch = data.match(/\{[\s\S]*\}/);
-  //       if (jsonMatch) data = JSON.parse(jsonMatch[0]);
-  //     }
-  //     setResult(data);
-  //   } catch (err) {
-  //     alert("Analysis failed. Please check your connection.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-
-
-  // const handleCheck = async () => {
-  //   if (!resumeText || !jobRole || !jobDescription) {
-  //     return alert("Ensure Role, JD, and Resume are provided!");
-  //   }
-  //   setLoading(true);
-  //   try {
-  //     const res = await api.post("/resume/check", 
-  //       { resumeText, jobRole, jobDescription },
-  //       { headers: { Authorization: localStorage.getItem("token") } }
-  //     );
-
-  //     // ✅ NEW CLEANER LOGIC: Extracts JSON even if wrapped in markdown
-  //     let data = res.data;
-  //     if (typeof data === 'string') {
-  //       const jsonMatch = data.match(/\{[\s\S]*\}/); // Finds content between first { and last }
-  //       if (jsonMatch) {
-  //         data = JSON.parse(jsonMatch[0]);
-  //       }
-  //     }
-      
-  //     setResult(data);
-  //   } catch (err) {
-  //     console.error("Analysis Error:", err);
-  //     alert("AI Analysis failed. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-
-  // const handleCheck = async () => {
-  //   if (!resumeText || !jobRole || !jobDescription) {
-  //     return alert("Ensure Role, JD, and Resume are provided!");
-  //   }
-  //   setLoading(true);
-  //   try {
-  //     const res = await api.post("/resume/check", 
-  //       { resumeText, jobRole, jobDescription },
-  //       { headers: { Authorization: localStorage.getItem("token") } }
-  //     );
-
-  //     let data = res.data;
-
-  //     // If the backend sends a string (because JSON.parse failed there), 
-  //     // we clean it here. If it's already an object, we use it directly.
-  //     if (typeof data === 'string') {
-  //       const jsonMatch = data.match(/\{[\s\S]*\}/);
-  //       if (jsonMatch) {
-  //         data = JSON.parse(jsonMatch[0]);
-  //       }
-  //     }
-      
-  //     setResult(data);
-  //   } catch (err) {
-  //     console.error("Analysis Error:", err);
-  //     alert("AI Analysis failed. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-  // const handleCheck = async () => {
-  //   if (!resumeText || !jobRole || !jobDescription) {
-  //     return alert("Ensure Role, JD, and Resume are provided!");
-  //   }
-
-  //   setLoading(true);
-  //   try {
-  //     const res = await api.post(
-  //       "/resume/check",
-  //       { resumeText, jobRole, jobDescription },
-  //       { headers: { Authorization: localStorage.getItem("token") } }
-  //     );
-
-  //     let data = res.data;
-
-  //     // ---- CLEAN & EXTRACT JSON IF AI SENT TEXT + MARKDOWN ----
-  //     if (typeof data === "string") {
-  //       const jsonMatch = data.match(/\{[\s\S]*\}/);
-  //       if (jsonMatch) {
-  //         data = JSON.parse(jsonMatch[0]);
-  //       }
-  //     }
-
-  //     // ---- NORMALIZE SHAPE SO UI NEVER BREAKS ----
-  //     data = {
-  //       atsScore: data.atsScore ?? 0,
-  //       strengths: Array.isArray(data.strengths) ? data.strengths : [],
-  //       suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
-  //       missingKeywords: Array.isArray(data.missingKeywords)
-  //         ? data.missingKeywords
-  //         : [],
-  //       weaknesses: Array.isArray(data.weaknesses)
-  //         ? data.weaknesses
-  //         : [],
-  //     };
-
-  //     console.log("FINAL CLEANED RESULT:", data); // <-- Keep this for debugging
-  //     setResult(data);
-  //   } catch (err) {
-  //     console.error("Analysis Error:", err);
-  //     alert("Invalid AI response format.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleCheck = async () => {
     if (!resumeText || !jobRole || !jobDescription) {
       return alert("Ensure Role, JD, and Resume are provided!");
@@ -1644,69 +1865,27 @@ export default function Checker() {
 
       let data = res.data;
 
-      // 🔥 STRONG CLEANING LOGIC (fixes your exact screenshot issue)
       if (typeof data === "string") {
-        // 1) Remove everything before the first {
         const start = data.indexOf("{");
         const end = data.lastIndexOf("}");
-
         if (start !== -1 && end !== -1) {
           const jsonText = data.substring(start, end + 1);
           data = JSON.parse(jsonText);
         }
       }
 
-      // 🔥 Normalize shape so UI never breaks
-      // data = {
-      //   atsScore: data.atsScore ?? 0,
-      //   strengths: Array.isArray(data.strengths) ? data.strengths : [],
-      //   suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
-      //   missingKeywords: Array.isArray(data.missingKeywords)
-      //     ? data.missingKeywords
-      //     : [],
-      //   weaknesses: Array.isArray(data.weaknesses)
-      //     ? data.weaknesses
-      //     : [],
-      // };
-
-
       data = {
-          atsScore: data.atsScore ?? 0,
+        atsScore: data.atsScore ?? 0,
+        strengths: typeof data.strengths === "string" 
+          ? data.strengths.split(/\n|•|-|1\.|2\.|3\.|4\./).map(s => s.trim()).filter(s => s.length > 2) 
+          : Array.isArray(data.strengths) ? data.strengths : [],
+        suggestions: typeof data.suggestions === "string" 
+          ? data.suggestions.split(/\n|•|-|1\.|2\.|3\.|4\./).map(s => s.trim()).filter(s => s.length > 2) 
+          : Array.isArray(data.suggestions) ? data.suggestions : [],
+        missingKeywords: Array.isArray(data.missingKeywords) ? data.missingKeywords : [],
+        weaknesses: typeof data.weaknesses === "string" ? [data.weaknesses] : Array.isArray(data.weaknesses) ? data.weaknesses : [],
+      };
 
-          strengths:
-            typeof data.strengths === "string"
-              ? data.strengths
-                  .split(/\n|•|-|1\.|2\.|3\.|4\./) // break into lines
-                  .map(s => s.trim())
-                  .filter(s => s.length > 2)
-              : Array.isArray(data.strengths)
-              ? data.strengths
-              : [],
-
-          suggestions:
-            typeof data.suggestions === "string"
-              ? data.suggestions
-                  .split(/\n|•|-|1\.|2\.|3\.|4\./) // VERY IMPORTANT LINE
-                  .map(s => s.trim())
-                  .filter(s => s.length > 2)
-              : Array.isArray(data.suggestions)
-              ? data.suggestions
-              : [],
-
-          missingKeywords: Array.isArray(data.missingKeywords)
-            ? data.missingKeywords
-            : [],
-
-          weaknesses:
-            typeof data.weaknesses === "string"
-              ? [data.weaknesses]
-              : Array.isArray(data.weaknesses)
-              ? data.weaknesses
-              : [],
-        };
-
-
-      console.log("FINAL CLEANED RESULT:", data);
       setResult(data);
     } catch (err) {
       console.error("Analysis Error:", err);
@@ -1716,67 +1895,72 @@ export default function Checker() {
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300 pb-20 font-sans">
       {/* HEADER NAV */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b px-6 py-4 flex justify-between items-center shadow-sm">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold transition-all">
-          <ArrowLeft size={20} /> Back
-        </button>
-        <div className="flex gap-3">
-          <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2 rounded-xl font-bold hover:bg-slate-200 transition-all border border-slate-200">
-            <LayoutDashboard size={18} /> Dashboard
+      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b dark:border-slate-800 px-6 py-4 flex justify-between items-center shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="p-2 bg-blue-600 rounded-lg text-white">
+            <Sparkles size={20} />
+          </div>
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-all">
+            <ArrowLeft size={20} /> <span className="hidden md:inline">Back</span>
+          </button>
+        </div>
+
+        <div className="flex gap-3 items-center">
+          <ThemeToggle />
+          <button onClick={() => navigate("/dashboard")} className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-5 py-2 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border dark:border-slate-700">
+            <LayoutDashboard size={18} /> <span className="hidden lg:inline">Dashboard</span>
           </button>
           <button onClick={() => navigate("/create")} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 active:scale-95 transition-all">
-            <PlusCircle size={18} /> Create Resume
+            <PlusCircle size={18} /> <span className="hidden sm:inline">New Resume</span>
           </button>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto mt-10 px-6">
-        {/* ✅ FIXED TITLE: ICON AND TEXT IN ONE LINE */}
         <header className="text-center mb-12 flex flex-col items-center">
           <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="p-3 bg-blue-50 rounded-2xl">
-              <Sparkles className="text-blue-600 animate-pulse" size={32} />
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl">
+              <Sparkles className="text-blue-600 dark:text-blue-400 animate-pulse" size={32} />
             </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">AI Resume Checker</h1>
+            <h1 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight">AI Resume Checker</h1>
           </div>
-          <p className="text-slate-500 font-medium">Get real-time feedback and ATS optimization suggestions</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Get real-time feedback and ATS optimization suggestions</p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           {/* LEFT PANEL: INPUTS */}
           <div className="lg:col-span-7 space-y-8">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-800 transition-all">
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 block ml-1">Target Job Role</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-2 block ml-1">Target Job Role</label>
                   <div className="relative group">
-                    <Target className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500" size={18} />
-                    <input type="text" placeholder="e.g. Full Stack Developer" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl outline-none focus:border-blue-400 focus:bg-white transition-all text-sm font-medium" onChange={(e) => setJobRole(e.target.value)} />
+                    <Target className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 group-focus-within:text-blue-500" size={18} />
+                    <input type="text" placeholder="e.g. Full Stack Developer" className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 dark:text-slate-100 border-2 border-slate-50 dark:border-slate-800 rounded-2xl outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-all text-sm font-medium" onChange={(e) => setJobRole(e.target.value)} />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 block ml-1">Resume Upload (PDF)</label>
-                  <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-slate-200 border-dashed rounded-[2rem] cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-all overflow-hidden relative">
+                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-2 block ml-1">Resume Upload (PDF)</label>
+                  <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-slate-200 dark:border-slate-800 border-dashed rounded-[2rem] cursor-pointer bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:border-blue-400 transition-all overflow-hidden relative">
                     <div className="flex flex-col items-center justify-center">
-                      {isParsing ? <Loader2 className="animate-spin text-blue-500" size={40} /> : <UploadCloud className="w-10 h-10 text-slate-400 mb-2" />}
-                      <p className="text-sm text-slate-600 font-bold">{isParsing ? "Extracting..." : "Click to upload PDF"}</p>
+                      {isParsing ? <Loader2 className="animate-spin text-blue-500" size={40} /> : <UploadCloud className="w-10 h-10 text-slate-400 dark:text-slate-600 mb-2" />}
+                      <p className="text-sm text-slate-600 dark:text-slate-400 font-bold">{isParsing ? "Extracting..." : "Click to upload PDF"}</p>
                     </div>
                     <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} />
                   </label>
-                  {uploadedFileName && !isParsing && <p className="mt-3 text-xs font-bold text-green-600 flex items-center gap-2"><CheckCircle2 size={14}/> {uploadedFileName} ready!</p>}
+                  {uploadedFileName && !isParsing && <p className="mt-3 text-xs font-bold text-green-600 dark:text-green-500 flex items-center gap-2"><CheckCircle2 size={14}/> {uploadedFileName} ready!</p>}
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 block ml-1">Job Description</label>
-                  <textarea rows={6} className="w-full p-5 bg-slate-50 border-2 border-slate-50 rounded-[1.5rem] outline-none focus:border-blue-400 focus:bg-white transition-all text-sm leading-relaxed" placeholder="Paste JD here..." onChange={(e) => setJobDescription(e.target.value)} />
+                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-2 block ml-1">Job Description</label>
+                  <textarea rows={6} className="w-full p-5 bg-slate-50 dark:bg-slate-800 dark:text-slate-100 border-2 border-slate-50 dark:border-slate-800 rounded-[1.5rem] outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-all text-sm leading-relaxed" placeholder="Paste JD here..." onChange={(e) => setJobDescription(e.target.value)} />
                 </div>
 
-                <button onClick={handleCheck} disabled={loading || isParsing} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center justify-center gap-3 active:scale-95 transition-all">
+                <button onClick={handleCheck} disabled={loading || isParsing} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none flex items-center justify-center gap-3 active:scale-95 transition-all">
                   {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
                   {loading ? "Analyzing..." : "Analyze ATS Match"}
                 </button>
@@ -1784,398 +1968,65 @@ export default function Checker() {
             </div>
           </div>
 
-          {/* RIGHT PANEL: FORMATTED RESULTS */}
-          {/* <div className="lg:col-span-5 sticky top-28 space-y-6">
-            {result ? (
-              <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
-                <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-2">
-                  <BarChart3 className="text-blue-600" /> AI Insights
-                </h2>
-
-                <div className="bg-slate-900 rounded-[2rem] p-8 mb-8 text-center shadow-2xl relative overflow-hidden">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">ATS Compatibility</p>
-                  <p className={`text-7xl font-black ${result.atsScore > 70 ? 'text-green-400' : 'text-blue-400'}`}>
-                    {result.atsScore || 0}%
-                  </p>
-                </div>
-
-                <div className="space-y-6">
-                  <ResultSection icon={<CheckCircle2 size={16}/>} title="Strengths" items={result.strengths} bgColor="bg-green-50/50" textColor="text-green-800" badgeColor="bg-green-500" />
-                  <ResultSection icon={<AlertCircle size={16}/>} title="Suggestions" items={result.suggestions} bgColor="bg-blue-50/50" textColor="text-blue-800" badgeColor="bg-blue-600" />
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white h-[680px] p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                <BarChart3 size={60} className="text-slate-200 mb-6" />
-                <h3 className="text-2xl font-black text-slate-800 tracking-tight">Ready for Optimization</h3>
-                <p className="text-slate-400 max-w-[280px] mx-auto text-sm mt-3 leading-relaxed">Upload your resume and the job listing to see how you rank against recruiters' expectations.</p>
-              </div>
-            )}
-          </div> */}
           {/* RIGHT PANEL: RESULTS */}
-          {/* <div className="lg:col-span-5 sticky top-28">
+          <div className="lg:col-span-5 sticky top-28">
             {result ? (
-              <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
-                <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
-                  <Sparkles className="text-blue-600" size={24} /> AI Analysis
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-800 transition-all">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-3">
+                  <Sparkles className="text-blue-600 dark:text-blue-400" size={24} />
+                  AI Analysis Result
                 </h2>
 
-                {/* ATS SCORE BADGE 
-                <div className="bg-slate-900 rounded-[2rem] p-8 mb-8 text-center shadow-2xl relative overflow-hidden">
+                <div className="bg-slate-900 dark:bg-slate-950 rounded-[2rem] p-6 mb-6 text-center">
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">ATS Score Match</p>
-                  <p className={`text-7xl font-black ${result.atsScore > 70 ? 'text-green-400' : 'text-blue-400'}`}>
-                    {result.atsScore || 0}%
-                  </p>
+                  <p className="text-6xl font-black text-blue-400">{result.atsScore}%</p>
                 </div>
 
-                <div className="space-y-4">
-                  <ResultSection 
-                    icon={<AlertCircle size={16}/>} 
-                    title="Weaknesses" 
-                    items={result.weaknesses} 
-                    bgColor="bg-red-50/50" 
-                    textColor="text-red-800" 
-                    badgeColor="bg-red-500"
-                  />
-                  <ResultSection 
-                    icon={<CheckCircle2 size={16}/>} 
-                    title="Top Strengths" 
-                    items={result.strengths} 
-                    bgColor="bg-green-50/50" 
-                    textColor="text-green-800" 
-                    badgeColor="bg-green-500"
-                  />
-                  
-                  <ResultSection 
-                    icon={<AlertCircle size={16}/>} 
-                    title="Key Suggestions" 
-                    items={result.suggestions} 
-                    bgColor="bg-blue-50/50" 
-                    textColor="text-blue-800" 
-                    badgeColor="bg-blue-600"
-                  />
+                <ResultSection icon={<AlertCircle size={16} />} title="Weaknesses" items={result.weaknesses} bgColor="bg-red-50/50 dark:bg-red-900/10" textColor="text-red-800 dark:text-red-400" badgeColor="bg-red-500" />
+                <ResultSection icon={<CheckCircle2 size={16} />} title="Top Strengths" items={result.strengths} bgColor="bg-green-50/50 dark:bg-green-900/10" textColor="text-green-800 dark:text-green-400" badgeColor="bg-green-500" />
+                <ResultSection icon={<AlertCircle size={16} />} title="Key Suggestions" items={result.suggestions} bgColor="bg-blue-50/50 dark:bg-blue-900/10" textColor="text-blue-800 dark:text-blue-400" badgeColor="bg-blue-600" />
 
-                  {/* MISSING KEYWORDS TAGS 
-                  {result.missingKeywords?.length > 0 && (
-                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <Briefcase size={14} /> Missing Keywords
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {result.missingKeywords.map((k, i) => (
-                          <span key={i} className="bg-white text-slate-600 px-3 py-1.5 text-[11px] font-bold rounded-xl border border-slate-200 shadow-sm transition-transform hover:scale-105">
-                            {k}
-                          </span>
-                        ))}
-                      </div>
+                {result.missingKeywords.length > 0 && (
+                  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-800 mt-6">
+                    <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Briefcase size={14} /> Missing Keywords
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {result.missingKeywords.map((k, i) => (
+                        <span key={i} className="bg-white dark:bg-slate-900 dark:text-slate-300 px-3 py-1.5 text-xs font-bold rounded-xl border dark:border-slate-700 shadow-sm">{k}</span>
+                      ))}
                     </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white h-[680px] p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                {/* Your existing empty state code 
-              </div>
-            )}
-          </div> */}
-
-
-          {/* RIGHT PANEL: RESULTS */}
-          {/* <div className="lg:col-span-5 sticky top-28">
-            {result ? (
-              <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
-                <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
-                  <Sparkles className="text-blue-600" size={24} /> AI Analysis
-                </h2>
-
-                {/* ATS SCORE CARD 
-                <div className="bg-slate-900 rounded-[2rem] p-8 mb-8 text-center shadow-2xl">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                    ATS Score Match
-                  </p>
-                  <p
-                    className={`text-7xl font-black ${
-                      result.atsScore > 70 ? "text-green-400" : "text-blue-400"
-                    }`}
-                  >
-                    {result.atsScore}%
-                  </p>
-                </div>
-
-                <div className="space-y-5">
-                  {/* WEAKNESSES 
-                  <ResultSection
-                    icon={<AlertCircle size={16} />}
-                    title="Weaknesses"
-                    items={result.weaknesses}
-                    bgColor="bg-red-50/50"
-                    textColor="text-red-800"
-                    badgeColor="bg-red-500"
-                  />
-
-                  {/* STRENGTHS 
-                  <ResultSection
-                    icon={<CheckCircle2 size={16} />}
-                    title="Top Strengths"
-                    items={result.strengths}
-                    bgColor="bg-green-50/50"
-                    textColor="text-green-800"
-                    badgeColor="bg-green-500"
-                  />
-
-                  {/* SUGGESTIONS 
-                  <ResultSection
-                    icon={<AlertCircle size={16} />}
-                    title="Key Suggestions"
-                    items={result.suggestions}
-                    bgColor="bg-blue-50/50"
-                    textColor="text-blue-800"
-                    badgeColor="bg-blue-600"
-                  />
-
-                  {/* MISSING KEYWORDS TAGS 
-                  {result.missingKeywords?.length > 0 && (
-                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <Briefcase size={14} /> Missing Keywords
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {result.missingKeywords.map((k, i) => (
-                          <span
-                            key={i}
-                            className="bg-white text-slate-600 px-3 py-1.5 text-[11px] font-bold rounded-xl border border-slate-200 shadow-sm"
-                          >
-                            {k}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white h-[680px] p-10 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                <BarChart3 size={60} className="text-slate-200 mb-6" />
-                <h3 className="text-2xl font-black text-slate-800 tracking-tight">
-                  Ready for Optimization
-                </h3>
-                <p className="text-slate-400 max-w-[280px] mx-auto text-sm mt-3 leading-relaxed">
-                  Upload your resume and the job listing to see how you rank against recruiters'
-                  expectations.
-                </p>
-              </div>
-            )}
-          </div> */}
-
-
-          {/* RIGHT PANEL: RESULTS */}
-                  <div className="lg:col-span-5 sticky top-28">
-                    {result ? (
-                      <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
-                        <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                          <Sparkles className="text-blue-600" size={24} />
-                          AI Analysis Result
-                        </h2>
-
-                        {/* ATS SCORE */}
-                        <div className="bg-slate-900 rounded-[2rem] p-6 mb-6 text-center">
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                            ATS Score Match
-                          </p>
-                          <p className="text-6xl font-black text-blue-400">
-                            {result.atsScore}%
-                          </p>
-                        </div>
-
-                        {/* WEAKNESSES */}
-                        <ResultSection
-                          icon={<AlertCircle size={16} />}
-                          title="Weaknesses"
-                          items={result.weaknesses}
-                          bgColor="bg-red-50/50"
-                          textColor="text-red-800"
-                          badgeColor="bg-red-500"
-                        />
-
-                        {/* STRENGTHS */}
-                        <ResultSection
-                          icon={<CheckCircle2 size={16} />}
-                          title="Top Strengths"
-                          items={result.strengths}
-                          bgColor="bg-green-50/50"
-                          textColor="text-green-800"
-                          badgeColor="bg-green-500"
-                        />
-
-                        {/* SUGGESTIONS */}
-                        <ResultSection
-                          icon={<AlertCircle size={16} />}
-                          title="Key Suggestions"
-                          items={result.suggestions}
-                          bgColor="bg-blue-50/50"
-                          textColor="text-blue-800"
-                          badgeColor="bg-blue-600"
-                        />
-
-                        {/* MISSING KEYWORDS */}
-                        {result.missingKeywords.length > 0 && (
-                          <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 mt-6">
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                              <Briefcase size={14} /> Missing Keywords
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                              {result.missingKeywords.map((k, i) => (
-                                <span
-                                  key={i}
-                                  className="bg-white px-3 py-1.5 text-xs font-bold rounded-xl border"
-                                >
-                                  {k}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="bg-white h-[680px] p-10 rounded-[2.5rem] shadow-xl border flex items-center justify-center text-center">
-                        <p className="text-slate-400 font-bold">
-                          Upload resume & job description to see result
-                        </p>
-                      </div>
-                    )}
                   </div>
-
-        
-
-
-                </div>
+                )}
               </div>
-            </div>
-          );
-        }
-
-// ✅ REFINED SUGGESTION COMPONENT
-// function ResultSection({ icon, title, items, bgColor, textColor, badgeColor }) {
-//   if (!items || items.length === 0) return null;
-//   const listItems = Array.isArray(items) ? items : [items];
-
-//   return (
-//     <div className={`p-6 ${bgColor} rounded-[2rem] border border-white/50 shadow-sm animate-in slide-in-from-right-4`}>
-//       <h3 className={`font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 mb-5 ${textColor}`}>
-//         {icon} {title}
-//       </h3>
-//       <div className="space-y-4">
-//         {listItems.map((item, i) => {
-//           const parts = item.split(":");
-//           const heading = parts.length > 1 ? parts[0] : null;
-//           const description = parts.length > 1 ? parts.slice(1).join(":") : item;
-
-//           return (
-//             <div key={i} className="flex items-start gap-4 bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-white/80 hover:shadow-md transition-all group">
-//               <span className={`flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full ${badgeColor} text-white text-xs font-black shadow-sm group-hover:scale-110 transition-transform`}>
-//                 {i + 1}
-//               </span>
-//               <div>
-//                 {heading && <p className="text-sm font-black text-slate-800 mb-1 leading-tight">{heading.trim()}</p>}
-//                 <p className="text-sm text-slate-600 font-medium leading-relaxed">{description.trim()}</p>
-//               </div>
-//             </div>
-//           );
-//         })}
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-// function ResultSection({ icon, title, items, bgColor, textColor, badgeColor }) {
-//   if (!items || items.length === 0) return null;
-  
-//   // Ensure we are working with an array
-//   const listItems = Array.isArray(items) ? items : [items];
-
-//   return (
-//     <div className={`p-6 ${bgColor} rounded-[2rem] border border-white/50 shadow-sm mb-6 animate-in slide-in-from-right-4`}>
-//       <h3 className={`font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 mb-5 ${textColor}`}>
-//         {icon} {title}
-//       </h3>
-
-//       <div className="space-y-4">
-//         {listItems.map((item, i) => {
-//           // Split "Title: Description" if the AI uses that format
-//           const parts = item.split(":");
-//           const heading = parts.length > 1 ? parts[0] : null;
-//           const description = parts.length > 1 ? parts.slice(1).join(":") : item;
-
-//           return (
-//             <div
-//               key={i}
-//               className="flex items-start gap-4 bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-white/80 hover:shadow-md transition-all group"
-//             >
-//               {/* Step Number Badge */}
-//               <span className={`flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full ${badgeColor} text-white text-[10px] font-black shadow-sm group-hover:scale-110 transition-transform`}>
-//                 {i + 1}
-//               </span>
-
-//               <div>
-//                 {heading && (
-//                   <p className="text-sm font-black text-slate-800 mb-1 leading-tight">
-//                     {heading.trim()}
-//                   </p>
-//                 )}
-//                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
-//                   {description.trim()}
-//                 </p>
-//               </div>
-//             </div>
-//           );
-//         })}
-//       </div>
-//     </div>
-//   );
-// }
-
-
+            ) : (
+              <div className="bg-white dark:bg-slate-900 h-[680px] p-10 rounded-[2.5rem] shadow-xl border dark:border-slate-800 flex items-center justify-center text-center transition-all">
+                <p className="text-slate-400 dark:text-slate-600 font-bold">Upload resume & job description to see result</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ResultSection({ icon, title, items, bgColor, textColor, badgeColor }) {
-  // Convert everything into an array of clean sentences
-  let listItems = [];
-
-  if (typeof items === "string") {
-    // Remove JSON, backticks, and split into sentences
-    listItems = items
-      .replace(/```[\s\S]*```/g, "") // remove markdown code blocks
-      .replace(/\{[\s\S]*\}/g, "") // remove raw JSON
-      .split(".")
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-  } 
-  else if (Array.isArray(items)) {
-    listItems = items;
-  }
-
+  let listItems = Array.isArray(items) ? items : [];
   if (listItems.length === 0) return null;
 
   return (
-    <div className={`p-6 ${bgColor} rounded-[2rem] border shadow-sm mb-4`}>
+    <div className={`p-6 ${bgColor} rounded-[2rem] border dark:border-slate-800 shadow-sm mb-4 transition-all`}>
       <h3 className={`font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 mb-4 ${textColor}`}>
         {icon} {title}
       </h3>
-
       <div className="space-y-3">
-        {listItems.map((item, i) => {
-          return (
-            <div key={i} className="flex items-start gap-3 bg-white p-3 rounded-xl border">
-              <span className={`flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full ${badgeColor} text-white text-[10px] font-bold`}>
-                {i + 1}
-              </span>
-              <p className="text-sm text-slate-700 font-medium">
-                {item}
-              </p>
-            </div>
-          );
-        })}
+        {listItems.map((item, i) => (
+          <div key={i} className="flex items-start gap-3 bg-white dark:bg-slate-950 p-3 rounded-xl border dark:border-slate-800">
+            <span className={`flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full ${badgeColor} text-white text-[10px] font-bold`}>{i + 1}</span>
+            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

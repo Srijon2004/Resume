@@ -1366,9 +1366,342 @@
 
 
 
+// import { useEffect, useState, useRef } from "react";
+// import { useSearchParams, useNavigate } from "react-router-dom";
+// import { api } from "../api/api";
+// import {
+//   Mail,
+//   Phone,
+//   MapPin,
+//   GraduationCap,
+//   Briefcase,
+//   Target,
+//   Folder,
+//   Award,
+//   Download,
+//   Edit3,
+//   Loader2,
+//   Github,
+//   Linkedin,
+//   Trophy,
+//   Heart,
+//   User,
+//   LayoutDashboard, // Added Dashboard Icon
+// } from "lucide-react";
+// import html2canvas from "html2canvas";
+// import jsPDF from "jspdf";
+
+// export default function Preview() {
+//   const [searchParams] = useSearchParams();
+//   const navigate = useNavigate();
+//   const resumeId = searchParams.get("id");
+//   const [resume, setResume] = useState(null);
+//   const [isDownloading, setIsDownloading] = useState(false);
+//   const resumeRef = useRef();
+
+//   const parseContent = (text, label) => {
+//     if (!text) return "";
+//     const regex = new RegExp(
+//       `${label}:\\s*([\\s\\S]*?)(?=\\n\\n|\\n[A-Z][a-z]+:|$)`,
+//       "i",
+//     );
+//     const match = text.match(regex);
+//     return match ? match[1].trim() : "";
+//   };
+
+//   useEffect(() => {
+//     const fetchResume = async () => {
+//       try {
+//         let data;
+//         if (resumeId) {
+//           const res = await api.get(`/resume/${resumeId}`, {
+//             headers: { Authorization: localStorage.getItem("token") },
+//           });
+//           data = res.data;
+//         } else {
+//           data = JSON.parse(localStorage.getItem("result"));
+//         }
+//         setResume(data);
+//       } catch (err) {
+//         console.log("Error loading resume", err);
+//       }
+//     };
+//     fetchResume();
+//   }, [resumeId]);
+
+//   const downloadPDF = async () => {
+//     setIsDownloading(true);
+//     const element = resumeRef.current;
+    
+//     const canvas = await html2canvas(element, { 
+//       scale: 2, 
+//       useCORS: true,
+//       logging: false,
+//       allowTaint: true 
+//     });
+    
+//     const imgData = canvas.toDataURL("image/png");
+//     const pdf = new jsPDF("p", "mm", "a4");
+//     const pdfWidth = pdf.internal.pageSize.getWidth();
+//     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+//     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+//     pdf.save(`${userData.name || "Resume"}.pdf`);
+//     setIsDownloading(false);
+//   };
+
+//   if (!resume)
+//     return (
+//       <div className="flex items-center justify-center min-h-screen">
+//         <Loader2 className="animate-spin h-10 w-10 text-blue-600" />
+//       </div>
+//     );
+
+//   const raw = resume.content || "";
+//   const userData = {
+//     name:
+//       parseContent(raw, "FullName") ||
+//       parseContent(raw, "Name") ||
+//       resume.jobRole?.replace(" Resume", ""),
+//     phone: parseContent(raw, "Phone"),
+//     email: parseContent(raw, "Email"),
+//     linkedin: parseContent(raw, "LinkedIn"),
+//     github: parseContent(raw, "GitHub"),
+//     location: parseContent(raw, "Location") || "City, State",
+//     summary: parseContent(raw, "Summary") || parseContent(raw, "Objective"),
+//     education: parseContent(raw, "Education"),
+//     projects:
+//       parseContent(raw, "Projects") || parseContent(raw, "Academic Projects"),
+//     experience:
+//       parseContent(raw, "Experience") || parseContent(raw, "Internship"),
+//     skills: (resume.skills && resume.skills.length > 0) 
+//       ? resume.skills 
+//       : parseContent(raw, "Skills")?.split(",") || [],
+//     image: resume.image || "",
+//     achievements: parseContent(raw, "Achievements"),
+//     hobbies: parseContent(raw, "Hobbies"),
+//   };
+
+//   return (
+//     <div className="bg-gray-100 min-h-screen pb-20 font-sans">
+//       {/* UPDATED STICKY ACTION HEADER */}
+//       <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b p-4 flex justify-center gap-4 shadow-sm">
+//         {/* NEW DASHBOARD BUTTON */}
+//         <button
+//           onClick={() => navigate("/dashboard")}
+//           className="flex items-center gap-2 bg-slate-100 text-slate-700 px-6 py-2 rounded-full font-medium hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
+//         >
+//           <LayoutDashboard size={18} /> Dashboard
+//         </button>
+
+//         <button
+//           onClick={() => navigate(`/editor?id=${resumeId}`)}
+//           className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-all shadow-md"
+//         >
+//           <Edit3 size={18} /> Edit Resume
+//         </button>
+        
+//         <button
+//           onClick={downloadPDF}
+//           disabled={isDownloading}
+//           className="flex items-center gap-2 bg-[#FFD700] text-slate-900 px-6 py-2 rounded-full font-bold hover:bg-yellow-400 transition-all shadow-md disabled:opacity-50"
+//         >
+//           {isDownloading ? (
+//             <Loader2 className="animate-spin" size={18} />
+//           ) : (
+//             <Download size={18} />
+//           )}
+//           {isDownloading ? "Generating..." : "Download PDF"}
+//         </button>
+//       </div>
+
+//       <div className="flex justify-center p-4 sm:p-10">
+//         <div
+//           ref={resumeRef}
+//           className="bg-white max-w-[850px] w-full flex flex-col border-t-[12px] border-[#FFD700] shadow-2xl overflow-hidden"
+//         >
+//           {/* HEADER */}
+//           <div className="bg-[#1e293b] text-white p-10 flex flex-col md:flex-row justify-between items-center gap-6">
+//             <div className="text-center md:text-left">
+//               <h1 className="text-5xl font-extrabold uppercase tracking-tighter leading-none mb-2 italic">
+//                 {userData.name}
+//               </h1>
+//               <div className="h-1 w-20 bg-[#FFD700] mx-auto md:mx-0 mb-3"></div>
+//               <p className="text-lg font-medium tracking-[0.2em] text-slate-300 uppercase italic">
+//                 {resume.jobRole || "Professional"}
+//               </p>
+//             </div>
+//             <div className="w-32 h-32 bg-slate-700 rounded-full flex items-center justify-center border-4 border-slate-600 shadow-lg overflow-hidden shrink-0">
+//               {userData.image ? (
+//                 <img 
+//                   src={userData.image} 
+//                   alt="Profile" 
+//                   className="w-full h-full object-cover"
+//                 />
+//               ) : (
+//                 <span className="text-4xl font-bold text-[#FFD700]">
+//                   {userData.name?.[0] || <User size={40} />}
+//                 </span>
+//               )}
+//             </div>
+//           </div>
+
+//           <div className="flex flex-col md:flex-row flex-1">
+//             <div className="w-full md:w-[35%] bg-[#f8fafc] p-8 border-r border-slate-100">
+//               <SidebarSection title="Contact">
+//                 <ul className="space-y-4 text-[13px] text-slate-700">
+//                   <li className="flex items-center gap-3">
+//                     <MapPin size={14} className="text-blue-500" /> {userData.location}
+//                   </li>
+//                   <li className="flex items-center gap-3">
+//                     <Phone size={14} className="text-blue-500" /> {userData.phone}
+//                   </li>
+//                   <li className="flex items-center gap-3 break-all">
+//                     <Mail size={14} className="text-blue-500" /> {userData.email}
+//                   </li>
+//                   {userData.linkedin && (
+//                     <li className="flex items-center gap-3">
+//                       <Linkedin size={14} className="text-blue-500" />
+//                       <a href={`https://${userData.linkedin.replace('https://', '')}`} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">LinkedIn</a>
+//                     </li>
+//                   )}
+//                   {userData.github && (
+//                     <li className="flex items-center gap-3">
+//                       <Github size={14} className="text-slate-900" />
+//                       <a href={`https://${userData.github.replace('https://', '')}`} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">GitHub</a>
+//                     </li>
+//                   )}
+//                 </ul>
+//               </SidebarSection>
+
+//               <SidebarSection title="Technical Skills">
+//                 <div className="flex flex-wrap gap-2">
+//                   {userData.skills.length > 0 ? (
+//                     userData.skills.map((s, i) => (
+//                       <span key={i} className="bg-slate-200 text-slate-700 px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider border border-slate-300">
+//                         {s.trim()}
+//                       </span>
+//                     ))
+//                   ) : (
+//                     <span className="text-slate-400 text-xs italic">No skills added</span>
+//                   )}
+//                 </div>
+//               </SidebarSection>
+
+//               {userData.hobbies && (
+//                 <SidebarSection title="Hobbies">
+//                   <div className="flex items-start gap-2 text-[13px] text-slate-600 italic">
+//                     <Heart size={14} className="mt-1 text-rose-500" />
+//                     <p>{userData.hobbies}</p>
+//                   </div>
+//                 </SidebarSection>
+//               )}
+//             </div>
+
+//             <div className="w-full md:w-[65%] p-10 space-y-8">
+//               <MainSection icon={<Target size={18} />} title="Career Objective">
+//                 <p className="text-slate-600 text-[14px] leading-relaxed italic border-l-4 border-slate-200 pl-4">
+//                   "{userData.summary}"
+//                 </p>
+//               </MainSection>
+
+//               <MainSection icon={<GraduationCap size={18} />} title="Education">
+//                 <div className="text-slate-700 whitespace-pre-line text-[14px]">
+//                   {userData.education}
+//                 </div>
+//               </MainSection>
+
+//               <MainSection icon={<Folder size={18} />} title="Key Projects">
+//                 <div className="text-[14px] text-slate-600 whitespace-pre-line leading-relaxed">
+//                   {userData.projects}
+//                 </div>
+//               </MainSection>
+
+//               {userData.experience && (
+//                 <MainSection icon={<Briefcase size={18} />} title="Experience">
+//                   <div className="text-[14px] text-slate-600 whitespace-pre-line">
+//                     {userData.experience}
+//                   </div>
+//                 </MainSection>
+//               )}
+
+//               {userData.achievements && (
+//                 <MainSection icon={<Trophy size={18} />} title="Achievements">
+//                   <div className="text-[14px] text-slate-600 whitespace-pre-line">
+//                     {userData.achievements}
+//                   </div>
+//                 </MainSection>
+//               )}
+//             </div>
+//           </div>
+          
+//           <div className="bg-white p-4 text-right">
+//             <p className="text-[10px] text-gray-400">© Shine.com. All rights reserved</p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// function SidebarSection({ title, children }) {
+//   return (
+//     <div className="mb-8">
+//       <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4 border-b border-slate-200 pb-1 italic">
+//         {title}
+//       </h3>
+//       {children}
+//     </div>
+//   );
+// }
+
+// function MainSection({ icon, title, children }) {
+//   return (
+//     <div className="relative">
+//       <div className="flex items-center gap-4 mb-3">
+//         <div className="bg-[#FFD700] p-2 rounded-lg text-slate-900 shadow-sm">
+//           {icon}
+//         </div>
+//         <h2 className="font-bold uppercase text-lg text-slate-800 tracking-tight">
+//           {title}
+//         </h2>
+//       </div>
+//       <div className="pl-14 border-l-2 border-slate-100 ml-4 pb-4">
+//         {children}
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { api } from "../api/api";
+import ThemeToggle from "../components/ThemeToggle"; // ✅ Integrated Theme Toggle
 import {
   Mail,
   Phone,
@@ -1377,16 +1710,16 @@ import {
   Briefcase,
   Target,
   Folder,
-  Award,
+  Trophy,
   Download,
   Edit3,
   Loader2,
   Github,
   Linkedin,
-  Trophy,
   Heart,
   User,
-  LayoutDashboard, // Added Dashboard Icon
+  LayoutDashboard,
+  Sparkles
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -1452,7 +1785,7 @@ export default function Preview() {
 
   if (!resume)
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-slate-950">
         <Loader2 className="animate-spin h-10 w-10 text-blue-600" />
       </div>
     );
@@ -1483,36 +1816,44 @@ export default function Preview() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen pb-20 font-sans">
-      {/* UPDATED STICKY ACTION HEADER */}
-      <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b p-4 flex justify-center gap-4 shadow-sm">
-        {/* NEW DASHBOARD BUTTON */}
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="flex items-center gap-2 bg-slate-100 text-slate-700 px-6 py-2 rounded-full font-medium hover:bg-slate-200 transition-all border border-slate-200 shadow-sm"
-        >
-          <LayoutDashboard size={18} /> Dashboard
-        </button>
+    <div className="bg-gray-100 dark:bg-slate-950 min-h-screen pb-20 font-sans transition-colors duration-300">
+      
+      {/* ✅ UNIFIED ACTION HEADER with ThemeToggle */}
+      <div className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b dark:border-slate-800 p-4 flex justify-between items-center shadow-sm px-4 md:px-12">
+        <div className="flex items-center gap-4">
+            <div className="p-2 bg-blue-600 rounded-lg text-white">
+                <Sparkles size={20} />
+            </div>
+            <button
+            onClick={() => navigate("/dashboard")}
+            className="flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-all"
+            >
+                <LayoutDashboard size={18} /> <span className="hidden md:inline">Dashboard</span>
+            </button>
+        </div>
 
-        <button
-          onClick={() => navigate(`/editor?id=${resumeId}`)}
-          className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-all shadow-md"
-        >
-          <Edit3 size={18} /> Edit Resume
-        </button>
-        
-        <button
-          onClick={downloadPDF}
-          disabled={isDownloading}
-          className="flex items-center gap-2 bg-[#FFD700] text-slate-900 px-6 py-2 rounded-full font-bold hover:bg-yellow-400 transition-all shadow-md disabled:opacity-50"
-        >
-          {isDownloading ? (
-            <Loader2 className="animate-spin" size={18} />
-          ) : (
-            <Download size={18} />
-          )}
-          {isDownloading ? "Generating..." : "Download PDF"}
-        </button>
+        <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button
+            onClick={() => navigate(`/editor?id=${resumeId}`)}
+            className="flex items-center gap-2 bg-slate-800 dark:bg-slate-700 text-white px-4 md:px-6 py-2 rounded-full font-medium hover:bg-slate-700 dark:hover:bg-slate-600 transition-all shadow-md"
+            >
+                <Edit3 size={18} /> <span className="hidden sm:inline">Edit</span>
+            </button>
+            
+            <button
+            onClick={downloadPDF}
+            disabled={isDownloading}
+            className="flex items-center gap-2 bg-[#FFD700] text-slate-900 px-4 md:px-6 py-2 rounded-full font-bold hover:bg-yellow-400 transition-all shadow-md disabled:opacity-50"
+            >
+                {isDownloading ? (
+                    <Loader2 className="animate-spin" size={18} />
+                ) : (
+                    <Download size={18} />
+                )}
+                <span className="hidden sm:inline">{isDownloading ? "Generating..." : "Download PDF"}</span>
+            </button>
+        </div>
       </div>
 
       <div className="flex justify-center p-4 sm:p-10">
@@ -1520,7 +1861,7 @@ export default function Preview() {
           ref={resumeRef}
           className="bg-white max-w-[850px] w-full flex flex-col border-t-[12px] border-[#FFD700] shadow-2xl overflow-hidden"
         >
-          {/* HEADER */}
+          {/* RESUME CONTENT (Kept light for PDF quality) */}
           <div className="bg-[#1e293b] text-white p-10 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-center md:text-left">
               <h1 className="text-5xl font-extrabold uppercase tracking-tighter leading-none mb-2 italic">
