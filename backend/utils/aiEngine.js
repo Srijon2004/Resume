@@ -72,6 +72,111 @@
 
 
 
+// okkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+// import Groq from "groq-sdk";
+
+// const groq = new Groq({
+//   apiKey: process.env.GROQ_API_KEY,
+// });
+
+// export const analyzeResume = async (resumeText, jobRole, jobDescription) => {
+//   try {
+//     const prompt = `
+// You are an ATS (Applicant Tracking System) expert.
+
+// STRICT RULES:
+// - You MUST return ONLY valid JSON.
+// - NO markdown, NO backticks, NO explanations outside JSON.
+// - strengths, weaknesses, suggestions, and missingKeywords MUST be ARRAYS.
+// - Each item in the arrays must be a SHORT single sentence (not a paragraph).
+
+// Analyze the resume below for the given job role and job description.
+
+// JOB ROLE:
+// ${jobRole}
+
+// JOB DESCRIPTION:
+// ${jobDescription}
+
+// RESUME TEXT:
+// ${resumeText}
+
+// Return JSON in this EXACT format:
+
+// {
+//   "atsScore": number between 0 and 100,
+//   "strengths": [
+//     "short sentence",
+//     "short sentence"
+//   ],
+//   "weaknesses": [
+//     "short sentence",
+//     "short sentence"
+//   ],
+//   "missingKeywords": [
+//     "keyword1",
+//     "keyword2"
+//   ],
+//   "suggestions": [
+//     "short sentence",
+//     "short sentence"
+//   ]
+// }
+// `;
+
+//     const response = await groq.chat.completions.create({
+//       model: "llama-3.3-70b-versatile",
+//       messages: [
+//         { role: "system", content: "You are a strict ATS analyzer that ONLY returns JSON." },
+//         { role: "user", content: prompt },
+//       ],
+//       temperature: 0.2, // lower = more structured output
+//     });
+
+//     let resultText = response.choices[0].message.content;
+
+//     // ---- EXTRA SAFETY: extract JSON if model still adds text ----
+//     const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+//     if (jsonMatch) {
+//       resultText = jsonMatch[0];
+//     }
+
+//     let result = JSON.parse(resultText);
+
+//     // ---- FINAL NORMALIZATION (guarantee correct shape) ----
+//     result = {
+//       atsScore: result.atsScore ?? 0,
+//       strengths: Array.isArray(result.strengths) ? result.strengths : [],
+//       weaknesses: Array.isArray(result.weaknesses) ? result.weaknesses : [],
+//       suggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
+//       missingKeywords: Array.isArray(result.missingKeywords)
+//         ? result.missingKeywords
+//         : [],
+//     };
+
+//     return result;
+//   } catch (error) {
+//     console.error("Groq AI Error:", error);
+
+//     // Clean fallback so frontend never breaks
+//     return {
+//       atsScore: 50,
+//       strengths: ["AI response parsing failed"],
+//       weaknesses: ["AI response parsing failed"],
+//       missingKeywords: [],
+//       suggestions: ["Please try again"],
+//     };
+//   }
+// };
+
+
+
+
+
+
+
+
+
 
 import Groq from "groq-sdk";
 
@@ -79,6 +184,10 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
+/**
+ * Analyzes resume text against a job role and description using Groq AI.
+ * Includes robust JSON extraction and detailed error logging for debugging.
+ */
 export const analyzeResume = async (resumeText, jobRole, jobDescription) => {
   try {
     const prompt = `
@@ -88,7 +197,7 @@ STRICT RULES:
 - You MUST return ONLY valid JSON.
 - NO markdown, NO backticks, NO explanations outside JSON.
 - strengths, weaknesses, suggestions, and missingKeywords MUST be ARRAYS.
-- Each item in the arrays must be a SHORT single sentence (not a paragraph).
+- Each item in the arrays must be a SHORT single sentence.
 
 Analyze the resume below for the given job role and job description.
 
@@ -102,25 +211,12 @@ RESUME TEXT:
 ${resumeText}
 
 Return JSON in this EXACT format:
-
 {
   "atsScore": number between 0 and 100,
-  "strengths": [
-    "short sentence",
-    "short sentence"
-  ],
-  "weaknesses": [
-    "short sentence",
-    "short sentence"
-  ],
-  "missingKeywords": [
-    "keyword1",
-    "keyword2"
-  ],
-  "suggestions": [
-    "short sentence",
-    "short sentence"
-  ]
+  "strengths": ["short sentence"],
+  "weaknesses": ["short sentence"],
+  "missingKeywords": ["keyword1"],
+  "suggestions": ["short sentence"]
 }
 `;
 
@@ -130,41 +226,43 @@ Return JSON in this EXACT format:
         { role: "system", content: "You are a strict ATS analyzer that ONLY returns JSON." },
         { role: "user", content: prompt },
       ],
-      temperature: 0.2, // lower = more structured output
+      temperature: 0.2, // lower = more structured and deterministic output
     });
 
     let resultText = response.choices[0].message.content;
 
-    // ---- EXTRA SAFETY: extract JSON if model still adds text ----
-    const jsonMatch = resultText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      resultText = jsonMatch[0];
+    try {
+      // ✅ EXTRA SAFETY: Extract JSON if the model includes conversational text
+      const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        resultText = jsonMatch[0];
+      }
+
+      let result = JSON.parse(resultText);
+
+      // ✅ FINAL NORMALIZATION: Guarantee correct data shape for the frontend
+      return {
+        atsScore: typeof result.atsScore === "number" ? result.atsScore : 0,
+        strengths: Array.isArray(result.strengths) ? result.strengths : [],
+        weaknesses: Array.isArray(result.weaknesses) ? result.weaknesses : [],
+        suggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
+        missingKeywords: Array.isArray(result.missingKeywords) ? result.missingKeywords : [],
+      };
+    } catch (parseError) {
+      // ✅ CRITICAL FIX: Log raw resultText to debug why JSON parsing failed
+      console.error("❌ AI JSON Parse Error. Raw Response Content:", resultText);
+      throw parseError; // Re-throw to be caught by the outer catch block
     }
-
-    let result = JSON.parse(resultText);
-
-    // ---- FINAL NORMALIZATION (guarantee correct shape) ----
-    result = {
-      atsScore: result.atsScore ?? 0,
-      strengths: Array.isArray(result.strengths) ? result.strengths : [],
-      weaknesses: Array.isArray(result.weaknesses) ? result.weaknesses : [],
-      suggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
-      missingKeywords: Array.isArray(result.missingKeywords)
-        ? result.missingKeywords
-        : [],
-    };
-
-    return result;
   } catch (error) {
-    console.error("Groq AI Error:", error);
+    console.error("❌ Groq AI Error:", error.message);
 
-    // Clean fallback so frontend never breaks
+    // ✅ ROBUST FALLBACK: Ensures the frontend receives valid data structures even on failure
     return {
-      atsScore: 50,
-      strengths: ["AI response parsing failed"],
-      weaknesses: ["AI response parsing failed"],
+      atsScore: 0,
+      strengths: ["AI analysis temporarily unavailable"],
+      weaknesses: ["Connection error or parsing failure"],
       missingKeywords: [],
-      suggestions: ["Please try again"],
+      suggestions: ["Please check your internet connection or try a shorter resume text."],
     };
   }
 };
